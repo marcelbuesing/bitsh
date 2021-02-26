@@ -7,4 +7,5 @@ edition = "2018"
 [dependencies]
 
 [dev-dependencies]
+bitvec = { version = "0.21", default-features = false, features = [] }
 proptest = "1"

@@ -1,4 +1,5 @@
 use super::*;
+use bitvec::prelude::*;
 use proptest::{prelude::ProptestConfig, prop_assert_eq, proptest};
 
 // todo: not sure about this
@@ -67,18 +68,32 @@ fn u16_little_endian_pack_and_unpack() {
 
 proptest! {
     #![proptest_config(ProptestConfig {
-        cases: 10000,  .. ProptestConfig::default()
+        cases: 1000000,
+        verbose: 2,
+        .. ProptestConfig::default()
+
       })]
     #[test]
     fn u16_little_endian_pack_and_unpack_proptest(value in (0..65535u16), start_bit in (0..15usize)) {
         let mut data : [u8; 2]= [0, 0];
+        let mut data2 : [u8; 2]= [0, 0];
         // bits required to store value
-        let num_bits = ((value as f32).log2() + 1.0) as usize;
+        let num_bits = ((value as f32).log2()) as usize + 1;
         let start_bit = if start_bit + num_bits > 16 { 16 - num_bits } else { start_bit };
 
+        println!("VALUE: {}", value);
+        println!("START_BIT: {}", start_bit);
+        println!("END_BIT: {}", start_bit + num_bits);
         value.pack_le_bits(&mut data, start_bit, num_bits);
+        data2.view_bits_mut::<LocalBits>()[start_bit..(start_bit + num_bits)].store_le(value);
+        prop_assert_eq!(data, data2);
+
         let unpacked_value = u16::unpack_le_bits(&data, start_bit, num_bits);
-        prop_assert_eq!(value, unpacked_value)
+        let unpacked_value2: u16 = data2.view_bits::<LocalBits>()[start_bit..(start_bit + num_bits)].load_le();
+
+        prop_assert_eq!(unpacked_value, unpacked_value2);
+        prop_assert_eq!(value, unpacked_value);
+        prop_assert_eq!(value, unpacked_value2)
     }
 }
 
@@ -98,13 +113,24 @@ proptest! {
     #[test]
     fn u16_big_endian_pack_and_unpack_proptest(value in (0..65535u16), start_bit in (0..15usize)) {
         let mut data : [u8; 2]= [0, 0];
+        let mut data2 : [u8; 2]= [0, 0];
         // bits required to store value
-        let num_bits = ((value as f32).log2() + 1.0) as usize;
+        let num_bits = ((value as f32).log2()) as usize + 1;
         let start_bit = if start_bit + num_bits > 16 { 16 - num_bits } else { start_bit };
 
+        println!("VALUE: {}", value);
+        println!("START_BIT: {}", start_bit);
+        println!("END_BIT: {}", start_bit + num_bits);
         value.pack_be_bits(&mut data, start_bit, num_bits);
+        data2.view_bits_mut::<LocalBits>()[start_bit..(start_bit + num_bits)].store_be(value);
+        prop_assert_eq!(data, data2);
+
         let unpacked_value = u16::unpack_be_bits(&data, start_bit, num_bits);
-        prop_assert_eq!(value, unpacked_value)
+        let unpacked_value2: u16 = data2.view_bits::<LocalBits>()[start_bit..(start_bit + num_bits)].load_be();
+
+        prop_assert_eq!(unpacked_value, unpacked_value2);
+        prop_assert_eq!(value, unpacked_value);
+        prop_assert_eq!(value, unpacked_value2)
     }
 }
 
